@@ -1,0 +1,10 @@
+venv
+.venv
+__pycache__
+*.pyc
+.git
+.cursor
+*.ipynb
+.pytest_cache
+agent-transcripts
+

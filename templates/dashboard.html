@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('logo') }}">
+  <link rel="shortcut icon" href="{{ url_for('logo') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ── CSS VARIABLES ──────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0b0e14;
+      --surface:     #111620;
+      --surface2:    #181e2d;
+      --border:      #1e2840;
+      --border2:     #263050;
+      --accent:      #f5a623;
+      --accent2:     #ff6b2b;
+      --accent-glow: rgba(245,166,35,0.18);
+      --green:       #22d3a5;
+      --red:         #ff4d6d;
+      --blue:        #4f9cf9;
+      --text:        #e8eaf2;
+      --text2:       #8b93b0;
+      --text3:       #555f80;
+      --font-head:   'Syne', sans-serif;
+      --font-body:   'DM Sans', sans-serif;
+      --font-mono:   'JetBrains Mono', monospace;
+      --radius:      12px;
+      --radius-sm:   7px;
+      --shadow:      0 4px 32px rgba(0,0,0,0.45);
+      --transition:  all 0.22s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── RESET & BASE ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── TOPBAR ─────────────────────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11,14,20,0.88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 62px;
+      animation: slideDown .4s ease;
+    }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:none; } }
+
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar-logo img { height: 36px; width: auto; filter: brightness(1.1); }
+    .topbar-wordmark {
+      font-family: var(--font-head);
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--text); letter-spacing: .01em;
+    }
+    .topbar-wordmark span { color: var(--accent); }
+    .topbar-divider { width: 1px; height: 28px; background: var(--border); }
+    .topbar-subtitle {
+      font-size: .72rem; font-weight: 300;
+      color: var(--text2); letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+    /* live clock */
+    .topbar-clock {
+      font-family: var(--font-mono);
+      font-size: .72rem; font-weight: 600;
+      color: var(--text2);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .topbar-clock span { color: var(--accent); }
+
+    .live-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(34,211,165,0.10);
+      border: 1px solid rgba(34,211,165,0.25);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: .72rem; color: var(--green);
+      font-weight: 500; letter-spacing: .04em;
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.8s ease infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(0.75);} }
+
+    .btn-logout {
+      font-family: var(--font-body); font-size: .78rem; font-weight: 500;
+      color: var(--text2); background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 6px 16px; cursor: pointer; text-decoration: none;
+      transition: var(--transition);
+    }
+    .btn-logout:hover { color: var(--red); border-color: rgba(255,77,109,0.4); background: rgba(255,77,109,0.06); }
+
+    /* ── LAYOUT ─────────────────────────────────────────────────────────── */
+    .layout { display: flex; flex: 1; position: relative; z-index: 1; }
+
+    /* ── SIDEBAR ────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 72px; background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      align-items: center; padding: 20px 0; gap: 6px;
+      position: sticky; top: 62px; height: calc(100vh - 62px);
+      overflow: hidden;
+      transition: width .28s cubic-bezier(.4,0,.2,1);
+      flex-shrink: 0;
+    }
+    .sidebar:hover { width: 210px; }
+
+    .nav-item {
+      width: calc(100% - 16px);
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      border: 1px solid transparent; white-space: nowrap; position: relative;
+    }
+    .nav-item:hover { background: rgba(245,166,35,0.07); border-color: rgba(245,166,35,0.15); }
+    .nav-item.active { background: rgba(245,166,35,0.12); border-color: rgba(245,166,35,0.28); }
+    .nav-icon { font-size: 1.2rem; width: 22px; min-width: 22px; text-align: center; color: var(--text2); transition: var(--transition); }
+    .nav-item:hover .nav-icon,
+    .nav-item.active .nav-icon { color: var(--accent); }
+    .nav-label {
+      font-size: .8rem; font-weight: 500; color: var(--text2);
+      transition: var(--transition); opacity: 0; transform: translateX(-6px);
+    }
+    .sidebar:hover .nav-label { opacity: 1; transform: none; transition: opacity .22s ease .08s, transform .22s ease .08s; }
+    .nav-item.active .nav-label { color: var(--accent); }
+    .nav-badge {
+      margin-left: auto; font-size: .65rem;
+      background: var(--accent); color: #000;
+      border-radius: 20px; padding: 1px 7px;
+      font-weight: 700; opacity: 0; transition: opacity .2s;
+    }
+    .sidebar:hover .nav-badge { opacity: 1; }
+
+    /* ── MAIN CONTENT ───────────────────────────────────────────────────── */
+    .main { flex: 1; padding: 28px 32px; overflow-x: hidden; min-width: 0; }
+
+    /* ── TAB PANELS ─────────────────────────────────────────────────────── */
+    .tab-panel { display: none; animation: fadeUp .3s ease; }
+    .tab-panel.active { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+    /* ── PAGE HEADER ────────────────────────────────────────────────────── */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .page-title {
+      font-family: var(--font-head); font-size: 1.65rem;
+      font-weight: 700; letter-spacing: -.01em; color: var(--text);
+    }
+    .page-title span { color: var(--accent); }
+    .page-subtitle { font-size: .82rem; color: var(--text2); margin-top: 4px; font-weight: 300; }
+
+    /* timestamp chip under page header */
+    .page-timestamp {
+      margin-top: 6px;
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      color: var(--text3);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      display: inline-block;
+    }
+
+    /* ── KPI CARDS ──────────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 22px;
+      position: relative; overflow: hidden; transition: var(--transition);
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .kpi-card.c-amber::before { background: linear-gradient(90deg, var(--accent), transparent); }
+    .kpi-card.c-green::before { background: linear-gradient(90deg, var(--green), transparent); }
+    .kpi-card.c-blue::before  { background: linear-gradient(90deg, var(--blue), transparent); }
+    .kpi-card.c-red::before   { background: linear-gradient(90deg, var(--red), transparent); }
+    .kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+
+    /* ── KPI VALUE — upright, tabular, prominent ─────────────────────────── */
+    .kpi-value {
+      font-family: var(--font-head);
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text);
+      font-style: normal;          /* never italic */
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .01em;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .kpi-unit {
+      font-size: .9rem; font-weight: 600;
+      color: var(--text2); letter-spacing: .02em;
+      font-style: normal;
+    }
+    .kpi-label {
+      font-size: .72rem; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .06em;
+      font-weight: 500;
+    }
+    /* last-updated chip inside KPI card */
+    .kpi-ts {
+      font-family: var(--font-mono);
+      font-size: .62rem; color: var(--text3);
+      margin-top: 6px;
+    }
+
+    /* ── SECTION CARDS ──────────────────────────────────────────────────── */
+    .section-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; margin-bottom: 24px;
+    }
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 22px; border-bottom: 1px solid var(--border); gap: 12px;
+    }
+    .section-title {
+      font-family: var(--font-head); font-size: .9rem;
+      font-weight: 700; letter-spacing: .01em; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title .icon { color: var(--accent); font-size: 1rem; }
+    .section-body { padding: 0; }
+
+    /* ── TABLE STYLING ──────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    .table-wrap table { width: 100%; border-collapse: collapse; font-size: .78rem; min-width: 600px; }
+    .table-wrap thead tr { background: var(--surface2); border-bottom: 1px solid var(--border2); }
+    .table-wrap thead th {
+      padding: 11px 14px; text-align: left;
+      font-family: var(--font-head); font-size: .7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .07em; color: var(--text2); white-space: nowrap;
+    }
+    .table-wrap tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+    .table-wrap tbody tr:last-child { border-bottom: none; }
+    .table-wrap tbody tr:hover { background: rgba(245,166,35,0.04); }
+    .table-wrap tbody td {
+      padding: 10px 14px; color: var(--text);
+      white-space: nowrap; vertical-align: middle;
+    }
+    /* highlight computed duration cells */
+    .table-wrap tbody td.computed-col {
+      color: var(--green); font-size: .74rem;
+      background: rgba(34,211,165,0.04);
+    }
+    /* Speed badges */
+    .speed-badge {
+      display: inline-flex; align-items: center;
+      background: rgba(79,156,249,0.12);
+      border: 1px solid rgba(79,156,249,0.25);
+      color: var(--blue); border-radius: 20px;
+      padding: 2px 10px; font-size: .72rem; font-weight: 600;
+    }
+    .speed-badge.active { background: rgba(34,211,165,0.1); border-color: rgba(34,211,165,0.25); color: var(--green); }
+
+    /* ── INNER TABS (Report sub-tabs / TAT) ─────────────────────────────── */
+    .inner-tabs {
+      display: flex; gap: 4px;
+      padding: 14px 22px 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .inner-tab {
+      font-family: var(--font-head); font-size: .78rem; font-weight: 600;
+      color: var(--text2); background: transparent;
+      border: 1px solid transparent; border-bottom: none;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      padding: 8px 18px; cursor: pointer; transition: var(--transition);
+      white-space: nowrap;
+    }
+    .inner-tab:hover { color: var(--text); background: rgba(245,166,35,0.07); }
+    .inner-tab.active {
+      color: var(--accent); background: var(--surface2);
+      border-color: var(--border); border-bottom-color: var(--surface2);
+      position: relative; top: 1px;
+    }
+    .inner-panel { display: none; }
+    .inner-panel.active { display: block; }
+
+    /* ── UPLOAD ZONE ────────────────────────────────────────────────────── */
+    /*
+     * Layout:
+     *   .upload-card  — outer rounded card (border, background)
+     *   .upload-drop  — clickable drop target (covers top portion, no button)
+     *   .upload-footer — sits BELOW the drop target; holds the submit button
+     *
+     * The hidden <input type="file"> is scoped only to .upload-drop so
+     * clicks on the button are never intercepted by the file picker.
+     */
+    .upload-card {
+      border: 2px dashed var(--border2); border-radius: var(--radius);
+      background: var(--surface2); transition: var(--transition);
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .upload-card:hover, .upload-card.dragover {
+      border-color: var(--accent); background: rgba(245,166,35,0.05);
+    }
+    /* Drop zone — file input lives here only */
+    .upload-drop {
+      position: relative; padding: 32px 28px 24px; text-align: center;
+      cursor: pointer;
+    }
+    .upload-drop input[type="file"] {
+      position: absolute; inset: 0; opacity: 0;
+      cursor: pointer; width: 100%; height: 100%;
+      /* z-index lower than nothing — sits behind all visible children */
+      z-index: 0;
+    }
+    /* All visible content inside .upload-drop must be above the file input */
+    .upload-drop > *:not(input) { position: relative; z-index: 1; pointer-events: none; }
+    .upload-icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .upload-title { font-family: var(--font-head); font-weight: 700; font-size: 1rem; color: var(--text); }
+    .upload-sub { font-size: .78rem; color: var(--text2); margin-top: 4px; }
+    /* Footer — sits outside the file input's hit area */
+    .upload-footer {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      padding: 14px 28px 18px; flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.10);
+    }
+    .upload-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent); color: #000;
+      border: none; border-radius: var(--radius-sm);
+      padding: 10px 26px; font-family: var(--font-head); font-size: .84rem; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+    }
+    .upload-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(245,166,35,0.35); }
+    .upload-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-download {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; color: var(--green);
+      border: 1px solid rgba(34,211,165,0.35); border-radius: var(--radius-sm);
+      padding: 9px 22px; font-family: var(--font-head); font-size: .82rem; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+    }
+    .btn-download:hover { background: rgba(34,211,165,0.08); transform: translateY(-1px); }
+    .upload-msg {
+      font-size: .8rem; padding: 8px 16px; border-radius: var(--radius-sm);
+      margin-bottom: 16px; display: none;
+    }
+    .upload-msg.show { display: block; }
+    .upload-msg.ok  { background: rgba(34,211,165,0.1); color: var(--green); border: 1px solid rgba(34,211,165,0.25); }
+    .upload-msg.err { background: rgba(255,77,109,0.1); color: var(--red);   border: 1px solid rgba(255,77,109,0.25); }
+
+    /* ── ROUTE TRACKER ──────────────────────────────────────────────────── */
+    .route-tracker { display: flex; align-items: center; gap: 0; padding: 22px; overflow-x: auto; }
+    .route-stop { display: flex; flex-direction: column; align-items: center; min-width: 90px; }
+    .route-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--surface2); border: 2px solid var(--border2);
+      margin-bottom: 8px; transition: var(--transition);
+    }
+    .route-dot.done    { background: var(--green);  border-color: var(--green);  box-shadow: 0 0 10px rgba(34,211,165,0.4); }
+    .route-dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(245,166,35,0.5); }
+    .route-name { font-size: .68rem; color: var(--text2); text-align: center; max-width: 80px; line-height: 1.3; }
+    .route-line { flex: 1; height: 2px; background: var(--border2); margin-bottom: 22px; min-width: 30px; }
+    .route-line.done { background: linear-gradient(90deg, var(--green), var(--border2)); }
+
+    /* ── SEARCH BAR ─────────────────────────────────────────────────────── */
+    .table-controls { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .search-input {
+      flex: 1; min-width: 180px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 7px 14px;
+      font-family: var(--font-body); font-size: .8rem; color: var(--text);
+      outline: none; transition: var(--transition);
+    }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .search-input::placeholder { color: var(--text3); }
+
+    .tag { font-size: .7rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .tag-amber { background: rgba(245,166,35,0.12); color: var(--accent); border: 1px solid rgba(245,166,35,0.25); }
+    .tag-green { background: rgba(34,211,165,0.10); color: var(--green); border: 1px solid rgba(34,211,165,0.22); }
+    .tag-blue  { background: rgba(79,156,249,0.10);  color: var(--blue);  border: 1px solid rgba(79,156,249,0.22); }
+
+    /* ── MILEAGE BAR CHART ──────────────────────────────────────────────── */
+    .mileage-bars { padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+    .mileage-row { display: flex; align-items: center; gap: 12px; }
+    .mileage-label { font-size: .75rem; color: var(--text2); width: 160px; min-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mileage-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+    .mileage-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .8s cubic-bezier(.4,0,.2,1); }
+    .mileage-km { font-size: .75rem; color: var(--text2); width: 70px; text-align: right; }
+
+    /* ── TAT HIGHLIGHT CELLS ────────────────────────────────────────────── */
+    .tat-cell { color: var(--accent); font-weight: 600; font-family: var(--font-mono); font-size: .74rem; }
+
+    /* ── EMPTY STATE ────────────────────────────────────────────────────── */
+    .empty-state { padding: 48px 24px; text-align: center; }
+    .empty-icon  { font-size: 2.8rem; margin-bottom: 12px; opacity: .5; }
+    .empty-text  { color: var(--text2); font-size: .85rem; }
+
+    /* ── SCROLLBAR ──────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .main { padding: 18px 14px; }
+      .sidebar { display: none; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .topbar-clock { display: none; }
+    }
+  </style>
+</head>
+<body data-upload-msg="{% if upload_msg %}1{% else %}0{% endif %}"
+      data-active-tab="{{ active_tab }}"
+      data-active-inner="{{ active_inner }}">
+
+<!-- ── TOPBAR ──────────────────────────────────────────────────────────────── -->
+<nav class="topbar">
+  <div class="topbar-left">
+    {% if logo_exists %}
+    <div class="topbar-logo">
+      <img src="{{ url_for('logo') }}" alt="Hass Logo">
+    </div>
+    <div class="topbar-divider"></div>
+    {% endif %}
+    <div>
+      <div class="topbar-wordmark">Hass <span>Petroleum</span></div>
+      <div class="topbar-subtitle">Logistics Monitor · Tanzania Operations</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-clock" id="live-clock"><span>EAT</span> <span id="clock-time">--:--:--</span></div>
+    <div class="live-pill"><div class="live-dot"></div>Live</div>
+    <a href="{{ url_for('logout') }}" class="btn-logout">Sign Out</a>
+  </div>
+</nav>
+
+<!-- ── LAYOUT ──────────────────────────────────────────────────────────────── -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="nav-item{% if active_tab == 'live' %} active{% endif %}" onclick="showTab('live', this)">
+      <span class="nav-icon">📡</span>
+      <span class="nav-label">Live Monitor</span>
+    </div>
+    <div class="nav-item{% if active_tab == 'report' %} active{% endif %}" onclick="showTab('report', this)">
+      <span class="nav-icon">📂</span>
+      <span class="nav-label">Reports</span>
+    </div>
+    <div class="nav-item{% if active_tab == 'outbound' %} active{% endif %}" onclick="showTab('outbound', this)">
+      <span class="nav-icon">🚛</span>
+      <span class="nav-label">Outbound</span>
+      <span class="nav-badge">{{ vehicle_count }}</span>
+    </div>
+    <div class="nav-item{% if active_tab == 'inbound' %} active{% endif %}" onclick="showTab('inbound', this)">
+      <span class="nav-icon">🔄</span>
+      <span class="nav-label">Inbound</span>
+    </div>
+    <div class="nav-item{% if active_tab == 'tat' %} active{% endif %}" onclick="showTab('tat', this)">
+      <span class="nav-icon">⏱</span>
+      <span class="nav-label">TAT</span>
+    </div>
+    <div class="nav-item{% if active_tab == 'mileage' %} active{% endif %}" onclick="showTab('mileage', this)">
+      <span class="nav-icon">⛽</span>
+      <span class="nav-label">Mileage</span>
+    </div>
+    <div class="nav-item{% if active_tab == 'destinations' %} active{% endif %}" onclick="showTab('destinations', this)">
+      <span class="nav-icon">📍</span>
+      <span class="nav-label">Destinations</span>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ────────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- ── KPI STRIP (full fleet — not scoped by Live Monitor time filter) ── -->
+    <div class="kpi-grid">
+      <div class="kpi-card c-amber">
+        <div class="kpi-value">{{ vehicle_count }}</div>
+        <div class="kpi-label">Tracked Vehicles</div>
+        <div class="kpi-ts">as at {{ last_updated }}</div>
+      </div>
+      <div class="kpi-card c-green">
+        <div class="kpi-value">{{ active_count }}</div>
+        <div class="kpi-label">Active Vehicles</div>
+        <div class="kpi-ts">speed &gt; 0 km/h</div>
+      </div>
+      <div class="kpi-card c-blue">
+        <div class="kpi-value">{{ stationary_count }}</div>
+        <div class="kpi-label">Stationary</div>
+        <div class="kpi-ts">speed = 0 km/h</div>
+      </div>
+      <div class="kpi-card c-red">
+        <div class="kpi-value" id="kpi-route">{{ route_stops }}</div>
+        <div class="kpi-label">Route Stops</div>
+        <div class="kpi-ts">Nakuru–Juba corridor</div>
+      </div>
+    </div>
+
+    <!-- ── ROUTE TRACKER ─────────────────────────────────────────────────── -->
+    <div class="section-card" style="margin-bottom:24px;">
+      <div class="section-head">
+        <div class="section-title"><span class="icon">🗺</span> Nakuru–Juba Corridor</div>
+        <span class="tag tag-amber">Active Route</span>
+      </div>
+      <div class="route-tracker">
+        <div class="route-stop">
+          <div class="route-dot done"></div>
+          <div class="route-name">Depot Nakuru</div>
+        </div>
+        <div class="route-line done"></div>
+        <div class="route-stop">
+          <div class="route-dot done"></div>
+          <div class="route-name">Malaba Border</div>
+        </div>
+        <div class="route-line done"></div>
+        <div class="route-stop">
+          <div class="route-dot current"></div>
+          <div class="route-name">Nimule Border</div>
+        </div>
+        <div class="route-line"></div>
+        <div class="route-stop">
+          <div class="route-dot"></div>
+          <div class="route-name">Juba Destination</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: LIVE MONITOR
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-live" class="tab-panel{% if active_tab == 'live' %} active{% endif %}">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Live <span>Monitor</span></div>
+          <div class="page-subtitle">Real-time fleet status across all tracked HASS vehicles</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+        <span class="tag tag-green">&#9679; Updating</span>
+      </div>
+
+      <div class="section-card" style="margin-bottom:20px;">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">📅</span> Date &amp; time range (EAT)</div>
+          <span class="tag tag-blue">This tab only</span>
+        </div>
+        <div class="table-controls">
+          <form method="get" action="{{ url_for('dashboard') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%;">
+            <label style="font-size:.78rem;color:var(--text2);display:flex;flex-direction:column;gap:4px;">
+              From
+              <input class="search-input" type="datetime-local" name="live_from" value="{{ live_filter_from }}" style="max-width:220px;">
+            </label>
+            <label style="font-size:.78rem;color:var(--text2);display:flex;flex-direction:column;gap:4px;">
+              To
+              <input class="search-input" type="datetime-local" name="live_to" value="{{ live_filter_to }}" style="max-width:220px;">
+            </label>
+            <button type="submit" class="upload-btn" style="padding:8px 16px;margin-top:18px;">Apply to Live Monitor</button>
+          </form>
+          <p style="font-size:.72rem;color:var(--text3);margin:8px 0 0 0;width:100%;">
+            Default is today 00:00–23:59 EAT. Data is loaded from Wialon message history for this window (other tabs use the current full fleet snapshot).
+          </p>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">📡</span> Fleet Status</div>
+        </div>
+        <div class="table-controls">
+          <input class="search-input" type="text" id="search-live" placeholder="Search vehicle name…" oninput="applyLiveFilters()">
+          <select class="search-input" id="live-status-filter" style="max-width:220px;" onchange="applyLiveFilters()">
+            <option value="">All Status</option>
+            <option value="moving">🟢 Moving</option>
+            <option value="stationary">🔴 Stationary</option>
+          </select>
+        </div>
+        <div class="table-wrap" id="table-live">
+          {{ live_table|safe }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: REPORTS
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-report" class="tab-panel{% if active_tab == 'report' %} active{% endif %}">
+      {% set rpt_inner = active_inner if active_inner else 'rpt-outbound' %}
+      <div class="page-header">
+        <div>
+          <div class="page-title">Report <span>Centre</span></div>
+          <div class="page-subtitle">Upload CSV or Excel reports · get Outbound, Inbound, Mileage &amp; TAT views</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+      </div>
+
+      <div class="section-card" style="margin-bottom:16px;">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">📅</span> Report interval (EAT)</div>
+          <span class="tag tag-blue">Wialon + filters</span>
+        </div>
+        <div class="table-controls" style="flex-wrap:wrap;">
+          <form method="get" action="{{ url_for('dashboard') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;width:100%;">
+            <input type="hidden" name="tab" value="report">
+            {% if active_inner %}<input type="hidden" name="inner" value="{{ active_inner }}">{% endif %}
+            <label style="font-size:.78rem;color:var(--text2);display:flex;flex-direction:column;gap:4px;">
+              From
+              <input class="search-input" type="datetime-local" name="live_from" value="{{ live_filter_from }}" style="max-width:220px;">
+            </label>
+            <label style="font-size:.78rem;color:var(--text2);display:flex;flex-direction:column;gap:4px;">
+              To
+              <input class="search-input" type="datetime-local" name="live_to" value="{{ live_filter_to }}" style="max-width:220px;">
+            </label>
+            <button type="submit" class="upload-btn" style="padding:8px 16px;">Apply interval</button>
+          </form>
+          <p style="font-size:.72rem;color:var(--text3);margin:8px 0 0 0;">Same window as Live Monitor (East Africa Time). <strong>Run Wialon geofence report</strong> uses these bounds.</p>
+        </div>
+      </div>
+
+      {% if upload_msg %}
+      <div class="upload-msg show {% if '✅' in upload_msg %}ok{% else %}err{% endif %}">
+        {{ upload_msg }}
+      </div>
+      {% endif %}
+
+      {% if wialon_geofence_msg %}
+      <div class="upload-msg show {% if '✅' in wialon_geofence_msg %}ok{% else %}err{% endif %}">
+        {{ wialon_geofence_msg }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('dashboard') }}" style="margin-bottom:18px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;">
+        <label style="font-size:.78rem;color:var(--text2);display:flex;flex-direction:column;gap:4px;">
+          From
+          <input class="search-input" type="datetime-local" name="live_from" value="{{ live_filter_from }}" style="max-width:220px;" required>
+        </label>
+        <label style="font-size:.78rem;color:var(--text2);display:flex;flex-direction:column;gap:4px;">
+          To
+          <input class="search-input" type="datetime-local" name="live_to" value="{{ live_filter_to }}" style="max-width:220px;" required>
+        </label>
+        <button type="submit" name="run_wialon_group_report" value="1" class="upload-btn" style="padding:10px 18px;">
+          Run Wialon geofence report
+        </button>
+        <span style="font-size:.74rem;color:var(--text3);max-width:480px;line-height:1.45;">
+          Resource <strong>{{ wialon_report_resource_id }}</strong>, template <strong>{{ wialon_report_template_id }}</strong>,
+          group <strong>{{ wialon_group_id }}</strong> only. Uses <strong>From / To</strong> above (EAT → UTC for Wialon). May take several minutes.
+        </span>
+      </form>
+
+      <!--
+        UPLOAD CARD
+        ┌─────────────────────────────────────────────────────┐
+        │  .upload-drop  ← click anywhere here to pick file   │
+        │  (hidden <input> covers this area only, z-index 0)  │
+        ├─────────────────────────────────────────────────────│
+        │  .upload-footer  ← button lives here, OUTSIDE the   │
+        │  file-input overlay so it always submits the form   │
+        └─────────────────────────────────────────────────────┘
+      -->
+      <form method="post" enctype="multipart/form-data" id="upload-form">
+        <input type="hidden" name="live_from" value="{{ live_filter_from }}">
+        <input type="hidden" name="live_to" value="{{ live_filter_to }}">
+        <div class="upload-card" id="upload-card">
+
+          <!-- Drop / click area — file input scoped here only -->
+          <div class="upload-drop" id="upload-drop">
+            <input type="file" name="report_file" accept=".csv,.xlsx"
+                   id="file-input" onchange="handleFileSelect(this)">
+            <div class="upload-icon">📁</div>
+            <div class="upload-title">Click or drop your vehicle list here</div>
+            <div class="upload-sub" id="file-name-display">
+              Upload a CSV / XLSX with a <strong>Vehicle</strong> column — reports will be generated for those vehicles only
+            </div>
+          </div>
+
+          <!-- Footer — sits below the file-input overlay -->
+          <div class="upload-footer">
+            <button type="submit" id="upload-btn" class="upload-btn" disabled>
+              ⬆ Upload &amp; Analyse
+            </button>
+            <span style="font-size:.74rem;color:var(--text3);flex-basis:100%;text-align:center;margin-top:2px;">
+              Select a file first, then click <em>Upload &amp; Analyse</em> to generate reports · Download uses the last analysed result
+            </span>
+          </div>
+
+        </div>
+      </form>
+
+      <!-- Download uses last analysed server-side result -->
+      <form method="post" action="{{ url_for('download_report') }}" id="download-form" style="margin-bottom:20px;">
+        <button type="submit" class="btn-download">
+          ⬇ Download Full Excel Workbook
+        </button>
+      </form>
+
+      <!-- Sub-tabs -->
+      <div class="section-card">
+        <div class="inner-tabs">
+          <div class="inner-tab{% if rpt_inner == 'rpt-outbound' %} active{% endif %}"  onclick="showInner('rpt-outbound', this)">🚛 Outbound</div>
+          <div class="inner-tab{% if rpt_inner == 'rpt-inbound' %} active{% endif %}"         onclick="showInner('rpt-inbound',  this)">🔄 Inbound</div>
+          <div class="inner-tab{% if rpt_inner == 'rpt-mileage' %} active{% endif %}"         onclick="showInner('rpt-mileage',  this)">⛽ Mileage</div>
+          <div class="inner-tab{% if rpt_inner == 'rpt-tat' %} active{% endif %}"         onclick="showInner('rpt-tat',      this)">⏱ TAT</div>
+          <div class="inner-tab{% if rpt_inner == 'rpt-wialon' %} active{% endif %}"         onclick="showInner('rpt-wialon',   this)">📡 Wialon T{{ wialon_report_template_id }}</div>
+        </div>
+
+        <!-- Outbound sub-panel -->
+        <div id="rpt-outbound" class="inner-panel{% if rpt_inner == 'rpt-outbound' %} active{% endif %}">
+          <div class="section-head" style="border-top:1px solid var(--border);">
+            <div class="section-title"><span class="icon">🚛</span> Outbound Report</div>
+            <span class="tag tag-amber">Depot → Juba</span>
+          </div>
+          <div class="table-controls">
+            <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-rpt-ob', this.value)">
+          </div>
+          <div class="table-wrap" id="table-rpt-ob">{{ report_ob_table|safe }}</div>
+        </div>
+
+        <!-- Inbound sub-panel -->
+        <div id="rpt-inbound" class="inner-panel{% if rpt_inner == 'rpt-inbound' %} active{% endif %}">
+          <div class="section-head" style="border-top:1px solid var(--border);">
+            <div class="section-title"><span class="icon">🔄</span> Inbound Report</div>
+            <span class="tag tag-amber">Juba → Depot</span>
+          </div>
+          <div class="table-controls">
+            <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-rpt-ib', this.value)">
+          </div>
+          <div class="table-wrap" id="table-rpt-ib">{{ report_ib_table|safe }}</div>
+        </div>
+
+        <!-- Mileage sub-panel — table FIRST, then chart -->
+        <div id="rpt-mileage" class="inner-panel{% if rpt_inner == 'rpt-mileage' %} active{% endif %}">
+          <div class="section-head" style="border-top:1px solid var(--border);">
+            <div class="section-title"><span class="icon">⛽</span> Mileage Report</div>
+          </div>
+          <div class="table-controls">
+            <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-rpt-mil', this.value)">
+          </div>
+          <div class="table-wrap" id="table-rpt-mil">{{ report_mil_table|safe }}</div>
+          <div class="mileage-bars" id="rpt-mileage-bars">
+            <div class="empty-state"><div class="empty-icon">⛽</div><div class="empty-text">Loading chart…</div></div>
+          </div>
+        </div>
+
+        <!-- TAT sub-panel -->
+        <div id="rpt-tat" class="inner-panel{% if rpt_inner == 'rpt-tat' %} active{% endif %}">
+          <div class="section-head" style="border-top:1px solid var(--border);">
+            <div class="section-title"><span class="icon">⏱</span> Turnaround Time (TAT)</div>
+            <span class="tag tag-blue">Outbound + Inbound · Back to Depot</span>
+          </div>
+          <div class="table-controls">
+            <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-rpt-tat', this.value)">
+          </div>
+          <div class="table-wrap" id="table-rpt-tat">{{ report_tat_table|safe }}</div>
+        </div>
+
+        <div id="rpt-wialon" class="inner-panel{% if rpt_inner == 'rpt-wialon' %} active{% endif %}">
+          <div class="section-head" style="border-top:1px solid var(--border);">
+            <div class="section-title"><span class="icon">📡</span> Wialon geofence report</div>
+            <span class="tag tag-green">Template {{ wialon_report_template_id }} · Group {{ wialon_group_id }}</span>
+          </div>
+          <div class="table-controls">
+            <input class="search-input" type="text" placeholder="Search…" oninput="filterTable('table-rpt-wialon', this.value)">
+          </div>
+          <div class="table-wrap" id="table-rpt-wialon">{{ wialon_geofence_table|safe }}</div>
+        </div>
+      </div><!-- /section-card -->
+    </div><!-- /tab-report -->
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: OUTBOUND (live data)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-outbound" class="tab-panel{% if active_tab == 'outbound' %} active{% endif %}">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Outbound <span>Trips</span></div>
+          <div class="page-subtitle">Depot Nakuru → Malaba → Nimule → Juba Destination</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+        <span class="tag tag-amber">🚛 Outbound</span>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">🚛</span> Trip Timeline</div>
+          <span class="tag tag-green">Checkpoint timestamps in EAT</span>
+        </div>
+        <div class="table-controls">
+          <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-outbound', this.value)">
+        </div>
+        <div class="table-wrap" id="table-outbound">{{ outbound_table|safe }}</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: INBOUND (live data)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-inbound" class="tab-panel{% if active_tab == 'inbound' %} active{% endif %}">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Inbound <span>Trips</span></div>
+          <div class="page-subtitle">Juba → Nimule → Malaba → Depot Nakuru</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+        <span class="tag tag-amber">🔄 Inbound</span>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">🔄</span> Return Journey</div>
+          <span class="tag tag-green">Checkpoint timestamps in EAT</span>
+        </div>
+        <div class="table-controls">
+          <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-inbound', this.value)">
+        </div>
+        <div class="table-wrap" id="table-inbound">{{ inbound_table|safe }}</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: TAT (live data)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-tat" class="tab-panel{% if active_tab == 'tat' %} active{% endif %}">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Turnaround <span>Time</span></div>
+          <div class="page-subtitle">Outbound + Inbound combined · Full round-trip back to Depot</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+        <span class="tag tag-blue">⏱ TAT</span>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">⏱</span> Full Round-Trip TAT per Vehicle</div>
+          <span class="tag tag-amber">Depot Departure → Depot Return</span>
+        </div>
+        <div class="table-controls">
+          <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-tat', this.value)">
+        </div>
+        <div class="table-wrap" id="table-tat">{{ tat_table|safe }}</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: MILEAGE (live data) — Table FIRST, chart below
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-mileage" class="tab-panel{% if active_tab == 'mileage' %} active{% endif %}">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Mileage <span>Analytics</span></div>
+          <div class="page-subtitle">Adjusted and actual distance per vehicle</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+      </div>
+
+      <!-- Table first -->
+      <div class="section-card" style="margin-bottom:24px;">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">⛽</span> Mileage Table</div>
+        </div>
+        <div class="table-controls">
+          <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-mileage', this.value)">
+        </div>
+        <div class="table-wrap" id="table-mileage">{{ mileage_table|safe }}</div>
+      </div>
+
+      <!-- Chart below -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">📈</span> Distance Overview</div>
+        </div>
+        <div class="mileage-bars" id="mileage-bars">
+          <div class="empty-state"><div class="empty-icon">⛽</div><div class="empty-text">Loading mileage data…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         TAB: DESTINATIONS
+    ══════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-destinations" class="tab-panel{% if active_tab == 'destinations' %} active{% endif %}">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Destination <span>Tracking</span></div>
+          <div class="page-subtitle">Filter by destination to view vehicles currently assigned there</div>
+          <div class="page-timestamp">{{ last_updated }}</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="icon">📍</span> Destination Fleet View</div>
+        </div>
+        <div class="table-controls">
+          <select class="search-input" id="destination-filter" onchange="filterByDestination()">
+            <option value="">All Destinations</option>
+            {% for destination in destination_options %}
+              <option value="{{ destination }}">{{ destination }}</option>
+            {% endfor %}
+          </select>
+          <input class="search-input" type="text" placeholder="Search vehicle…" oninput="filterTable('table-destinations', this.value)">
+        </div>
+        <div class="table-wrap" id="table-destinations">{{ destinations_table|safe }}</div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /layout -->
+
+<script>
+/* ── LIVE CLOCK (EAT = UTC+3) ───────────────────────────────────────────── */
+function tickClock() {
+  const now = new Date();
+  const eat = new Date(now.getTime() + 3 * 3600 * 1000);
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('clock-time').textContent =
+    `${eat.getUTCFullYear()}-${pad(eat.getUTCMonth()+1)}-${pad(eat.getUTCDate())} ` +
+    `${pad(eat.getUTCHours())}:${pad(eat.getUTCMinutes())}:${pad(eat.getUTCSeconds())}`;
+}
+tickClock(); setInterval(tickClock, 1000);
+
+/* ── NAVIGATION ─────────────────────────────────────────────────────────── */
+function showTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+
+  if (name === 'mileage')  buildMileageBars('table-mileage', 'mileage-bars');
+  if (name === 'report')   { buildMileageBars('table-rpt-mil', 'rpt-mileage-bars'); highlightTAT('table-rpt-tat'); }
+  if (name === 'tat')      highlightTAT('table-tat');
+  if (name === 'outbound') styleComputedCols('table-outbound');
+  if (name === 'inbound')  styleComputedCols('table-inbound');
+}
+
+/* ── INNER TABS (report sub-tabs) ───────────────────────────────────────── */
+function showInner(id, el) {
+  const card = el.closest('.section-card');
+  card.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+  card.querySelectorAll('.inner-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  if (id === 'rpt-mileage') buildMileageBars('table-rpt-mil', 'rpt-mileage-bars');
+  if (id === 'rpt-tat')     highlightTAT('table-rpt-tat');
+}
+
+/* ── TABLE SEARCH ───────────────────────────────────────────────────────── */
+function filterTable(wrapperId, query) {
+  const wrap = document.getElementById(wrapperId);
+  if (!wrap) return;
+  const q = query.toLowerCase();
+  wrap.querySelectorAll('tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function applyLiveFilters() {
+  const wrap = document.getElementById('table-live');
+  if (!wrap) return;
+  const q = (document.getElementById('search-live')?.value || '').toLowerCase();
+  const status = (document.getElementById('live-status-filter')?.value || '').toLowerCase();
+  wrap.querySelectorAll('tbody tr').forEach(row => {
+    const txt = (row.textContent || '').toLowerCase();
+    const searchOk = txt.includes(q);
+    let statusOk = true;
+    if (status === 'moving') statusOk = txt.includes('moving');
+    if (status === 'stationary') statusOk = txt.includes('stationary');
+    row.style.display = (searchOk && statusOk) ? '' : 'none';
+  });
+}
+
+function filterByDestination() {
+  const select = document.getElementById('destination-filter');
+  const wrap   = document.getElementById('table-destinations');
+  if (!select || !wrap) return;
+  const table = wrap.querySelector('table');
+  if (!table) return;
+  const headers = [...table.querySelectorAll('thead th')];
+  const destCol = headers.findIndex(h => h.textContent.toLowerCase().includes('destination'));
+  if (destCol < 0) return;
+  const selected = (select.value || '').toLowerCase();
+  table.querySelectorAll('tbody tr').forEach(row => {
+    if (!selected) { row.style.display = ''; return; }
+    const cells = row.querySelectorAll('td');
+    const value = (cells[destCol]?.textContent || '').toLowerCase();
+    row.style.display = value.includes(selected) ? '' : 'none';
+  });
+}
+
+/* ── STYLE COMPUTED DURATION COLUMNS ────────────────────────────────────── */
+const COMPUTED_HEADERS = [
+  'average time', 'transit to', 'time spent', 'tat', 'turnaround',
+  'outbound transit', 'inbound transit', 'time at juba'
+];
+function styleComputedCols(wrapperId) {
+  const wrap = document.getElementById(wrapperId);
+  if (!wrap) return;
+  const table = wrap.querySelector('table');
+  if (!table) return;
+  const headers = [...table.querySelectorAll('thead th')];
+  const cols = new Set();
+  headers.forEach((th, i) => {
+    const t = th.textContent.trim().toLowerCase();
+    if (COMPUTED_HEADERS.some(h => t.includes(h))) cols.add(i);
+  });
+  table.querySelectorAll('tbody tr').forEach(row => {
+    [...row.querySelectorAll('td')].forEach((td, i) => {
+      if (cols.has(i) && td.textContent.trim() && td.textContent.trim() !== '0') {
+        td.classList.add('computed-col');
+      }
+    });
+  });
+}
+
+/* ── HIGHLIGHT TAT COLUMN ───────────────────────────────────────────────── */
+function highlightTAT(wrapperId) {
+  const wrap = document.getElementById(wrapperId);
+  if (!wrap) return;
+  const table = wrap.querySelector('table');
+  if (!table) return;
+  const headers = [...table.querySelectorAll('thead th')];
+  const tatIdx  = headers.findIndex(h => h.textContent.toLowerCase().includes('full round'));
+  if (tatIdx < 0) return;
+  table.querySelectorAll(`tbody tr td:nth-child(${tatIdx + 1})`).forEach(td => {
+    if (td.textContent.trim()) td.classList.add('tat-cell');
+  });
+}
+
+/* ── MILEAGE BARS ───────────────────────────────────────────────────────── */
+function buildMileageBars(tableId, barsId) {
+  const barsEl = document.getElementById(barsId);
+  const table  = document.querySelector('#' + tableId + ' table');
+  if (!table || !barsEl) return;
+
+  const headers    = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
+  const vehicleIdx = headers.findIndex(h => h.toLowerCase().includes('vehicle'));
+  const mileageIdx = headers.findIndex(h =>
+    h.toLowerCase() === 'mileage (km)' || h.toLowerCase().includes('adjusted mileage'));
+  if (vehicleIdx < 0 || mileageIdx < 0) return;
+
+  const rows = [...table.querySelectorAll('tbody tr')].map(tr => {
+    const cells = [...tr.querySelectorAll('td')];
+    return {
+      vehicle: cells[vehicleIdx]?.textContent.trim() || '',
+      km:      parseFloat(cells[mileageIdx]?.textContent.replace(/[^\d.]/g,'')) || 0
+    };
+  }).filter(r => r.vehicle && r.km > 0);
+
+  if (!rows.length) { barsEl.innerHTML = '<div class="empty-state"><div class="empty-icon">⛽</div><div class="empty-text">No mileage data.</div></div>'; return; }
+  const maxKm = Math.max(...rows.map(r => r.km), 1);
+  barsEl.innerHTML = rows.map(r => `
+    <div class="mileage-row">
+      <div class="mileage-label" title="${r.vehicle}">${r.vehicle}</div>
+      <div class="mileage-track">
+        <div class="mileage-fill" style="width:${(r.km/maxKm*100).toFixed(1)}%"></div>
+      </div>
+      <div class="mileage-km">${r.km.toFixed(1)} km</div>
+    </div>
+  `).join('');
+}
+
+/* ── FILE UPLOAD FEEDBACK ────────────────────────────────────────────────── */
+function handleFileSelect(input) {
+  const display = document.getElementById('file-name-display');
+  const btn     = document.getElementById('upload-btn');
+  if (input.files && input.files[0]) {
+    const name = input.files[0].name;
+    display.innerHTML =
+      `<strong style="color:var(--accent)">📄 ${name}</strong> — ready to analyse`;
+    // Enable the submit button now that a file is chosen
+    if (btn) btn.disabled = false;
+  } else {
+    display.innerHTML =
+      'Upload a CSV / XLSX with a <strong>Vehicle</strong> column — reports will be generated for those vehicles only';
+    if (btn) btn.disabled = true;
+  }
+}
+
+/* ── DRAG & DROP ─────────────────────────────────────────────────────────── */
+const uploadCard = document.getElementById('upload-card');
+const uploadDrop = document.getElementById('upload-drop');
+if (uploadCard && uploadDrop) {
+  // Highlight card on drag-over
+  ['dragover', 'dragenter'].forEach(evt =>
+    uploadCard.addEventListener(evt, e => { e.preventDefault(); uploadCard.classList.add('dragover'); })
+  );
+  ['dragleave', 'dragend'].forEach(evt =>
+    uploadCard.addEventListener(evt, () => uploadCard.classList.remove('dragover'))
+  );
+  uploadCard.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadCard.classList.remove('dragover');
+    const fi = document.getElementById('file-input');
+    if (e.dataTransfer.files.length) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      fi.files = dt.files;
+      handleFileSelect(fi);
+    }
+  });
+}
+
+/* ── INIT ON LOAD ────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  const dsAt = document.body.dataset.activeTab || 'live';
+  const dsIn = document.body.dataset.activeInner || '';
+  if (dsAt && dsAt !== 'live') {
+    const nav = [...document.querySelectorAll('.nav-item')].find(el => {
+      const oc = el.getAttribute('onclick') || '';
+      return oc.includes(`'${dsAt}'`);
+    });
+    if (nav) showTab(dsAt, nav);
+  }
+  if (dsAt === 'report' && dsIn) {
+    const innerBtn = document.querySelector(`#tab-report .inner-tab[onclick*="'${dsIn}'"]`);
+    if (innerBtn) showInner(dsIn, innerBtn);
+  }
+
+  // Remove pandas dataframe class artifacts
+  document.querySelectorAll('.table-wrap table').forEach(t => {
+    t.classList.remove('dataframe');
+    t.removeAttribute('border');
+  });
+
+  // Badge speed cells in live table
+  const liveWrap = document.getElementById('table-live');
+  if (liveWrap) {
+    const headers  = [...(liveWrap.querySelector('thead tr')?.querySelectorAll('th') || [])];
+    const speedIdx = headers.findIndex(h => h.textContent.toLowerCase().includes('speed'));
+    if (speedIdx >= 0) {
+      liveWrap.querySelectorAll(`tbody tr td:nth-child(${speedIdx+1})`).forEach(td => {
+        const v = parseFloat(td.textContent);
+        if (!isNaN(v)) {
+          td.innerHTML = `<span class="speed-badge ${v > 0 ? 'active' : ''}">${v} km/h</span>`;
+        }
+      });
+    }
+  }
+
+  // Style computed duration columns in outbound / inbound
+  styleComputedCols('table-outbound');
+  styleComputedCols('table-inbound');
+  styleComputedCols('table-rpt-ob');
+  styleComputedCols('table-rpt-ib');
+
+  // TAT highlights
+  highlightTAT('table-tat');
+  highlightTAT('table-rpt-tat');
+
+  // Build mileage bars for whichever panel might be visible
+  buildMileageBars('table-mileage',  'mileage-bars');
+  buildMileageBars('table-rpt-mil',  'rpt-mileage-bars');
+
+  // Replace 0 / blank timestamps with dash
+  document.querySelectorAll('.table-wrap tbody td').forEach(td => {
+    const v = td.textContent.trim();
+    if (v === '0' || v === '0.0' || v === 'NaT' || v === 'nan') {
+      td.innerHTML = '<span style="color:var(--text3)">—</span>';
+    }
+  });
+
+  // Clear selected upload file after Upload & Analyse response.
+  const hadUploadMessage = document.body.dataset.uploadMsg === '1';
+  if (hadUploadMessage) {
+    const fi      = document.getElementById('file-input');
+    const display = document.getElementById('file-name-display');
+    const btn     = document.getElementById('upload-btn');
+    if (fi) fi.value = '';
+    if (display) {
+      display.innerHTML =
+        'Upload a CSV / XLSX with a <strong>Vehicle</strong> column — reports will be generated for those vehicles only';
+    }
+    // Keep button disabled until next file is chosen
+    if (btn) btn.disabled = true;
+
+    // Keep user on Reports tab after Upload & Analyse.
+    const reportNav = [...document.querySelectorAll('.nav-item')]
+      .find(el => (el.textContent || '').toLowerCase().includes('reports'));
+    if (reportNav) showTab('report', reportNav);
+  }
+});
+</script>
+</body>
+</html>
